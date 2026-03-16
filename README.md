@@ -75,8 +75,7 @@ Neural-Vision-Scanner
 - **canvas-sketch**
 - **Tweakpane**
 - **Web Audio API**
-- **HTML5 Canvas**
-- Motion detection algorithms
+- **Motion detection algorithms**
 
 ---
 
