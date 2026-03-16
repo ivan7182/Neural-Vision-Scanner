@@ -1,6 +1,6 @@
 # Neural Vision Scanner
 
-Experimental **computer vision system** that combines **motion tracking, surveillance aesthetics, and generative visual rendering** using **JavaScript** and **HTML5 Canvas**.
+Experimental **computer vision system** that combines **motion tracking, surveillance aesthetics, and generative visual rendering** using **JavaScript**
 
 This project merges multiple visual scanning systems such as **Tracked Echo Scanner** and **Neural Surveillance**, creating an artificial vision interface that detects motion and transforms it into dynamic visual feedback.
 
