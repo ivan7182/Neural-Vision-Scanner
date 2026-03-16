@@ -17,7 +17,6 @@ Example visuals produced by the system:
 - Scanner HUD overlay
 - Surveillance-style visual interface
 
-
 ---
 
 ## Features
@@ -33,13 +32,51 @@ Example visuals produced by the system:
 
 ---
 
+## Project Structure
+
+```
+Neural-Vision-Scanner
+│
+├── audio
+│   ├── criswar.mp3
+│   ├── hindia.mp3
+│   ├── lofi.mp4
+│   ├── spectrum.webm
+│   └── techno.webm
+│
+├── video
+│   ├── alone.mp4
+│   ├── boom.mp4
+│   ├── india.mp4
+│   ├── kuda.mp4
+│   └── kuda2.mp4
+│
+├── Neural-Surveillance.js
+├── Tracked-Echo-Scanner.js
+│
+├── package.json
+├── package-lock.json
+└── README.md
+```
+
+**Description**
+
+- **audio/** → audio sources used for audio-reactive visual effects  
+- **video/** → video files used for motion detection and visual input  
+- **Neural-Surveillance.js** → neural surveillance visual system  
+- **Tracked-Echo-Scanner.js** → motion echo tracking system  
+- **package.json** → project dependencies and scripts  
+
+---
+
 ## Technologies Used
 
 - **JavaScript**
 - **canvas-sketch**
 - **Tweakpane**
 - **Web Audio API**
-- **Motion detection algorithms**
+- **HTML5 Canvas**
+- Motion detection algorithms
 
 ---
 
@@ -94,10 +131,10 @@ Parameters can also be adjusted in real time using the **Tweakpane control panel
 
 This project is inspired by:
 
-- Computer vision interfaces
-- Surveillance camera aesthetics
-- Generative media art
-- Experimental creative coding
+- computer vision interfaces
+- surveillance camera aesthetics
+- generative media art
+- experimental creative coding
 
 ---
 
