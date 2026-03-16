@@ -1,18 +1,22 @@
 # Neural Vision Scanner
 
-Experimental **computer vision system** that combines **motion tracking, surveillance aesthetics, and generative visual rendering** using JavaScript and HTML5 Canvas.
+Experimental **computer vision system** that combines **motion tracking, surveillance aesthetics, and generative visual rendering** using **JavaScript** and **HTML5 Canvas**.
 
 This project merges multiple visual scanning systems such as **Tracked Echo Scanner** and **Neural Surveillance**, creating an artificial vision interface that detects motion and transforms it into dynamic visual feedback.
 
 The system simulates a **synthetic surveillance camera** that reacts to movement and audio, generating visual effects such as scanning overlays, motion echoes, and AI-like tracking.
 
 ---
-Example visuals:
+
+## Preview
+
+Example visuals produced by the system:
 
 - Motion tracking boxes
 - Echo motion trails
 - Scanner HUD overlay
 - Surveillance-style visual interface
+
 
 ---
 
@@ -20,7 +24,7 @@ Example visuals:
 
 - Motion detection from webcam video
 - Blob tracking of moving objects
-- Echo tracking system (Tracked Echo Scanner)
+- Echo tracking system (**Tracked Echo Scanner**)
 - Neural surveillance visual interface
 - Real-time visual scanning effects
 - Audio-reactive visual triggers
@@ -31,11 +35,11 @@ Example visuals:
 
 ## Technologies Used
 
-- JavaScript
-- canvas-sketch
-- Tweakpane
-- Web Audio API
-- Motion Detection Algorithms
+- **JavaScript**
+- **canvas-sketch**
+- **Tweakpane**
+- **Web Audio API**
+- **Motion detection algorithms**
 
 ---
 
@@ -43,8 +47,8 @@ Example visuals:
 
 1. Webcam frames are captured in real time.
 2. The system analyzes pixel differences between frames.
-3. Moving regions are detected and grouped as motion blobs.
-4. Tracking boxes follow the detected motion.
+3. Moving regions are detected and grouped into motion blobs.
+4. Tracking boxes follow the detected movement.
 5. Visual effects are generated based on motion and audio input.
 
 The result is a **synthetic vision interface** that behaves like an artificial surveillance system.
@@ -53,28 +57,36 @@ The result is a **synthetic vision interface** that behaves like an artificial s
 
 ## Installation
 
-Clone the repository
+Clone the repository:
 
+```bash
 git clone https://github.com/ivan7182/neural-vision-scanner.git
+```
 
-Install dependencies
+Install dependencies:
 
+```bash
 npm install
+```
 
-Run the project
+Run the project:
 
+```bash
 npm run dev
+```
 
 ---
 
 ## Controls
 
-Keyboard:
+### Keyboard
 
-R → Start recording  
-S → Stop recording  
+```
+R → Start recording
+S → Stop recording
+```
 
-Parameters can be adjusted in real-time using the **Tweakpane UI panel**.
+Parameters can also be adjusted in real time using the **Tweakpane control panel**.
 
 ---
 
@@ -82,17 +94,17 @@ Parameters can be adjusted in real-time using the **Tweakpane UI panel**.
 
 This project is inspired by:
 
-- computer vision interfaces
-- surveillance camera aesthetics
-- generative media art
-- experimental creative coding
+- Computer vision interfaces
+- Surveillance camera aesthetics
+- Generative media art
+- Experimental creative coding
 
 ---
 
 ## Possible Applications
 
 - Interactive installations
-- Live visuals
+- Live visual performances
 - Digital media art
 - Creative coding experiments
 - Computer vision prototypes
