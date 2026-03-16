@@ -32,17 +32,10 @@ Example visuals:
 ## Technologies Used
 
 - JavaScript
-- HTML5 Canvas
 - canvas-sketch
 - Tweakpane
 - Web Audio API
 - Motion Detection Algorithms
-
----
-
-## Project Structure
-
-
 
 ---
 
@@ -62,7 +55,7 @@ The result is a **synthetic vision interface** that behaves like an artificial s
 
 Clone the repository
 
-git clone https://github.com/yourusername/neural-vision-scanner.git
+git clone https://github.com/ivan7182/neural-vision-scanner.git
 
 Install dependencies
 
@@ -108,4 +101,4 @@ This project is inspired by:
 
 ## Author
 
-Creative coding & experimental computer vision project by **Your Name**
+Creative coding & experimental computer vision project by **vansatt**
