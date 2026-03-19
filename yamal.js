@@ -8,7 +8,6 @@ const settings = {
   fps: 30
 };
 
-
 let video;
 let audio, audioCtx, analyser, dataArray;
 let previousFrame = null;
@@ -33,7 +32,7 @@ let cropBgState = {
 let isRecordingFrames = false;
 let recordedFrameCount = 0;
 let captureStartTime = 0;
-let maxRecordSeconds = 30; 
+let maxRecordSeconds = 30;
 let shouldAutoStop = true;
 
 function downloadDataURL(dataURL, filename) {
@@ -93,14 +92,25 @@ const params = {
   cropBgAlpha: 0.98,
   cropOnlyLargest: false,
 
-  outsideObjectAscii: true,
+  outsideObjectAscii: false,
   outsideAsciiStep: 4,
   outsideAsciiAlpha: 1,
   outsideAsciiShadow: true,
 
   trackingMaxDistance: 80,
   trackingMaxMissed: 12,
-  velocitySmoothing: 0.7
+  velocitySmoothing: 0.7,
+
+  objectTrails: true,
+  trailLength: 14,
+  trailSpacing: 1,
+  trailAlpha: 0.22,
+  trailLineWidth: 1.2,
+  trailScaleFalloff: 0.035,
+  trailSpeedBoost: 0.55,
+  trailGlow: true,
+  trailBoxes: true,
+  trailCross: false
 };
 
 let motionThreshold = params.threshold;
@@ -137,6 +147,16 @@ pane.addInput(params, "trackingMaxDistance", { min: 20, max: 200, step: 1 });
 pane.addInput(params, "trackingMaxMissed", { min: 1, max: 40, step: 1 });
 pane.addInput(params, "velocitySmoothing", { min: 0, max: 0.95, step: 0.01 });
 
+pane.addInput(params, "objectTrails");
+pane.addInput(params, "trailLength", { min: 2, max: 40, step: 1 });
+pane.addInput(params, "trailSpacing", { min: 1, max: 4, step: 1 });
+pane.addInput(params, "trailAlpha", { min: 0.01, max: 0.8, step: 0.01 });
+pane.addInput(params, "trailLineWidth", { min: 0.5, max: 4, step: 0.1 });
+pane.addInput(params, "trailScaleFalloff", { min: 0, max: 0.15, step: 0.005 });
+pane.addInput(params, "trailSpeedBoost", { min: 0, max: 1.5, step: 0.01 });
+pane.addInput(params, "trailGlow");
+pane.addInput(params, "trailBoxes");
+pane.addInput(params, "trailCross");
 
 function rand(min, max) {
   return Math.random() * (max - min) + min;
@@ -148,6 +168,10 @@ function pick(arr) {
 
 function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
+}
+
+function recColor(normalColor, recordingColor = "rgba(0,0,0,0)") {
+  return isRecordingFrames ? recordingColor : normalColor;
 }
 
 function expandBlob(blob, padding, width, height) {
@@ -341,7 +365,6 @@ function getMaskDensity(mask, x, y, width, height, radius = 4) {
   return total > 0 ? hit / total : 0;
 }
 
-
 function updateTrackedObjects(blobs) {
   const maxDistance = params.trackingMaxDistance;
   const maxMissed = params.trackingMaxMissed;
@@ -394,6 +417,22 @@ function updateTrackedObjects(blobs) {
       bestTrack.vy = (bestTrack.vy || 0) * smoothing + rawVy * (1 - smoothing);
       bestTrack.speed = Math.hypot(bestTrack.vx, bestTrack.vy);
 
+      if (!bestTrack.history) bestTrack.history = [];
+      bestTrack.history.unshift({
+        x: bestTrack.x,
+        y: bestTrack.y,
+        w: bestTrack.w,
+        h: bestTrack.h,
+        cx: newCenter.x,
+        cy: newCenter.y,
+        speed: bestTrack.speed
+      });
+
+      const maxHistory = Math.max(4, params.trailLength * params.trailSpacing + 2);
+      if (bestTrack.history.length > maxHistory) {
+        bestTrack.history.length = maxHistory;
+      }
+
       matchedTracks.push(bestTrack);
     } else {
       const newTrack = {
@@ -410,7 +449,16 @@ function updateTrackedObjects(blobs) {
         prevY: center.y,
         vx: 0,
         vy: 0,
-        speed: 0
+        speed: 0,
+        history: [{
+          x: blob.x,
+          y: blob.y,
+          w: blob.w,
+          h: blob.h,
+          cx: center.x,
+          cy: center.y,
+          speed: 0
+        }]
       };
 
       trackedObjects.push(newTrack);
@@ -433,7 +481,6 @@ function updateTrackedObjects(blobs) {
   return matchedTracks;
 }
 
-
 function drawIsolatedTrackedBoxes(ctx, sourceCanvas, blobs, width, height) {
   ctx.save();
 
@@ -453,8 +500,8 @@ function drawIsolatedTrackedBoxes(ctx, sourceCanvas, blobs, width, height) {
 
     ctx.save();
     ctx.strokeStyle = i === 0
-      ? "rgba(255,80,80,0.95)"
-      : "rgba(255,110,110,0.82)";
+      ? recColor("rgba(255,80,80,0.95)", "rgba(0,255,120,0.9)")
+      : recColor("rgba(255,110,110,0.82)", "rgba(180,255,220,0.75)");
     ctx.lineWidth = 2;
     ctx.strokeRect(box.x, box.y, box.w, box.h);
 
@@ -539,7 +586,6 @@ function drawAsciiObjectOutsideBoxes(ctx, motionMask, pixels, blobs, width, heig
   ctx.restore();
 }
 
-
 function findBlobs(mask, width, height, minBlobSize = 80, maxBoxes = 8) {
   const visited = new Uint8Array(width * height);
   const blobs = [];
@@ -595,7 +641,6 @@ function findBlobs(mask, width, height, minBlobSize = 80, maxBoxes = 8) {
   return blobs.slice(0, maxBoxes);
 }
 
-
 function getBlobKey(blob) {
   const idPart = blob.id != null ? `id${blob.id}` : "";
   const kx = Math.floor(blob.x / 28);
@@ -650,7 +695,6 @@ function getRandomBoxEffect(blob, frameCount) {
 
   return item.effect;
 }
-
 
 function getBlobEdgePoints(blob, mask, width, height, maxPoints = 18) {
   const pts = [];
@@ -748,7 +792,7 @@ function drawBlobNetwork(ctx, blob, frameCount, mask, width, height) {
       ctx.moveTo(a.x, a.y);
       ctx.lineTo(node.x, node.y);
       ctx.strokeStyle = idx === 0
-        ? "rgba(255,70,70,0.78)"
+        ? recColor("rgba(255,70,70,0.78)", "rgba(0,255,120,0.5)")
         : "rgba(235,245,255,0.34)";
       ctx.lineWidth = d < 60 ? 1 : 0.7;
       ctx.stroke();
@@ -759,7 +803,7 @@ function drawBlobNetwork(ctx, blob, frameCount, mask, width, height) {
     ctx.beginPath();
     ctx.arc(n.x, n.y, 2.2, 0, Math.PI * 2);
     ctx.fillStyle = i % 4 === 0
-      ? "rgba(255,90,90,0.95)"
+      ? recColor("rgba(255,90,90,0.95)", "rgba(0,255,120,0.9)")
       : "rgba(210,240,255,0.92)";
     ctx.fill();
 
@@ -788,6 +832,108 @@ function drawCrosshair(ctx, cx, cy, size = 14) {
   ctx.restore();
 }
 
+function drawObjectTrails(ctx, blobs, width, height, bass, isBeat) {
+  if (!params.objectTrails) return;
+  if (!blobs || !blobs.length) return;
+
+  const trailCount = Math.max(1, params.trailLength);
+  const step = Math.max(1, params.trailSpacing);
+
+  ctx.save();
+
+  blobs.forEach((blob) => {
+    if (!blob.history || blob.history.length < 2) return;
+
+    const speedBoost = clamp((blob.speed || 0) * 0.03 * params.trailSpeedBoost, 0, 0.35);
+    const beatBoost = isBeat ? 0.08 : 0;
+    const baseAlpha = clamp(params.trailAlpha + speedBoost + beatBoost, 0.02, 0.9);
+
+    const history = blob.history.slice(0, trailCount * step);
+
+    for (let i = 1; i < history.length; i += step) {
+      const h = history[i];
+      const t = i / Math.max(1, trailCount * step);
+      const fade = Math.pow(1 - t, 1.35);
+      const alpha = baseAlpha * fade;
+
+      const scale = 1 - i * params.trailScaleFalloff;
+      const drawW = Math.max(8, h.w * scale);
+      const drawH = Math.max(8, h.h * scale);
+      const drawX = h.cx - drawW / 2;
+      const drawY = h.cy - drawH / 2;
+
+      const redAlpha = clamp(alpha * 0.95, 0, 1);
+      const greenAlpha = clamp(alpha * 0.65, 0, 1);
+      const whiteAlpha = clamp(alpha * 0.45, 0, 1);
+
+      if (params.trailGlow) {
+        ctx.shadowBlur = 10 + fade * 10;
+        ctx.shadowColor = recColor("rgba(255,80,80,0.25)", "rgba(0,255,120,0.16)");
+      } else {
+        ctx.shadowBlur = 0;
+      }
+
+      if (params.trailBoxes) {
+        ctx.lineWidth = params.trailLineWidth;
+        ctx.strokeStyle = isRecordingFrames
+          ? `rgba(0,255,120,${redAlpha * 0.7})`
+          : `rgba(255,80,80,${redAlpha})`;
+        ctx.strokeRect(drawX, drawY, drawW, drawH);
+
+        ctx.strokeStyle = `rgba(0,255,120,${greenAlpha})`;
+        ctx.strokeRect(drawX + 1.5, drawY + 1.5, drawW, drawH);
+
+        ctx.strokeStyle = `rgba(255,255,255,${whiteAlpha})`;
+        ctx.strokeRect(drawX - 1, drawY - 1, drawW, drawH);
+      }
+
+      if (params.trailCross) {
+        const cx = h.cx;
+        const cy = h.cy;
+        const size = Math.max(6, Math.min(drawW, drawH) * 0.14);
+
+        ctx.beginPath();
+        ctx.moveTo(cx - size, cy);
+        ctx.lineTo(cx + size, cy);
+        ctx.moveTo(cx, cy - size);
+        ctx.lineTo(cx, cy + size);
+        ctx.strokeStyle = `rgba(255,255,255,${alpha * 0.8})`;
+        ctx.lineWidth = Math.max(0.8, params.trailLineWidth * 0.9);
+        ctx.stroke();
+      }
+    }
+
+    const pathPoints = [];
+    for (let i = 0; i < history.length; i += step) {
+      pathPoints.push(history[i]);
+    }
+
+    if (pathPoints.length > 1) {
+      ctx.beginPath();
+      pathPoints.forEach((p, i) => {
+        if (i === 0) ctx.moveTo(p.cx, p.cy);
+        else ctx.lineTo(p.cx, p.cy);
+      });
+      ctx.strokeStyle = isRecordingFrames
+        ? `rgba(0,255,120,${clamp(baseAlpha * 0.3, 0, 1)})`
+        : `rgba(255,90,90,${clamp(baseAlpha * 0.42, 0, 1)})`;
+      ctx.lineWidth = Math.max(0.7, params.trailLineWidth * 0.85);
+      ctx.stroke();
+
+      ctx.beginPath();
+      pathPoints.forEach((p, i) => {
+        if (i === 0) ctx.moveTo(p.cx, p.cy);
+        else ctx.lineTo(p.cx, p.cy);
+      });
+      ctx.strokeStyle = `rgba(0,255,120,${clamp(baseAlpha * 0.24, 0, 1)})`;
+      ctx.lineWidth = Math.max(0.5, params.trailLineWidth * 0.55);
+      ctx.stroke();
+    }
+  });
+
+  ctx.restore();
+}
+
 function drawOuterTargetHUD(ctx, blob, i, bass, frame) {
   if (!params.outerHud) return;
 
@@ -798,7 +944,7 @@ function drawOuterTargetHUD(ctx, blob, i, bass, frame) {
 
   ctx.save();
 
-  ctx.strokeStyle = "rgba(255,70,70,0.85)";
+  ctx.strokeStyle = recColor("rgba(255,70,70,0.85)");
   ctx.lineWidth = 1.1;
   ctx.beginPath();
   ctx.arc(cx, cy, ringR, 0, Math.PI * 1.45);
@@ -866,7 +1012,7 @@ function drawDataHUD(ctx, blob, i, bass, frame) {
   ctx.save();
   ctx.globalAlpha = flicker;
 
-  ctx.strokeStyle = "rgba(255,70,70,0.98)";
+  ctx.strokeStyle = recColor("rgba(255,70,70,0.98)", "rgba(0,255,120,0.92)");
   ctx.lineWidth = 1.4;
   ctx.strokeRect(x, y, w, h);
 
@@ -894,7 +1040,7 @@ function drawDataHUD(ctx, blob, i, bass, frame) {
     const pulseR = 8 + Math.sin(frame * 0.12 + i) * 3;
     ctx.beginPath();
     ctx.arc(cx, cy, Math.max(3, pulseR), 0, Math.PI * 2);
-    ctx.strokeStyle = "rgba(255,70,70,0.34)";
+    ctx.strokeStyle = recColor("rgba(255,70,70,0.34)", "rgba(0,255,120,0.22)");
     ctx.stroke();
   }
 
@@ -943,10 +1089,10 @@ function drawBoxTag(ctx, blob, label = null) {
   const ty = Math.max(6, blob.y - 14);
 
   ctx.save();
-  ctx.fillStyle = "rgba(20,0,0,0.82)";
+  ctx.fillStyle = recColor("rgba(20,0,0,0.82)", "rgba(0,0,0,0.72)");
   ctx.fillRect(tx, ty, 92, 11);
 
-  ctx.strokeStyle = "rgba(255,60,60,0.94)";
+  ctx.strokeStyle = recColor("rgba(255,60,60,0.94)", "rgba(0,255,120,0.9)");
   ctx.strokeRect(tx, ty, 92, 11);
 
   ctx.fillStyle = "rgba(120,255,120,0.96)";
@@ -974,7 +1120,6 @@ function drawVelocityTag(ctx, blob) {
   ctx.fillText(`SPD ${speed.toFixed(1)} ${dir}`, tx + 4, ty + 8);
   ctx.restore();
 }
-
 
 function renderNoiseInsideBox(ctx, blob) {
   if (!params.noiseInsideBox) return;
@@ -1121,7 +1266,7 @@ function renderEffectInsideBox(ctx, blob, pixels, width, height, frameCount, sce
     ctx.fillStyle = "rgba(255,255,255,0.1)";
     ctx.fillRect(startX, scanY, blob.w, 4);
 
-    ctx.strokeStyle = "rgba(255,80,80,0.34)";
+    ctx.strokeStyle = recColor("rgba(255,80,80,0.34)", "rgba(0,255,120,0.2)");
     ctx.beginPath();
     ctx.moveTo(startX, scanY + 2);
     ctx.lineTo(startX + blob.w, scanY + 2);
@@ -1157,7 +1302,7 @@ function renderEffectInsideBox(ctx, blob, pixels, width, height, frameCount, sce
       }
     }
   } else if (effect === "wire") {
-    ctx.strokeStyle = "rgba(255,120,120,0.28)";
+    ctx.strokeStyle = recColor("rgba(255,120,120,0.28)", "rgba(0,255,120,0.22)");
 
     for (let y = startY; y < endY; y += 10) {
       ctx.beginPath();
@@ -1196,8 +1341,8 @@ function renderEffectInsideBox(ctx, blob, pixels, width, height, frameCount, sce
   renderNoiseInsideBox(ctx, blob);
 
   ctx.strokeStyle = effect === "ascii"
-    ? "rgba(255,110,110,0.46)"
-    : "rgba(255,80,80,0.34)";
+    ? recColor("rgba(255,110,110,0.46)", "rgba(0,255,120,0.28)")
+    : recColor("rgba(255,80,80,0.34)", "rgba(0,255,120,0.22)");
   ctx.lineWidth = 1;
   ctx.strokeRect(blob.x + 1, blob.y + 1, Math.max(0, blob.w - 2), Math.max(0, blob.h - 2));
 
@@ -1254,7 +1399,10 @@ function drawRecordingHUD(ctx, width, height) {
   if (!isRecordingFrames) return;
 
   ctx.save();
-  ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.95)";
+  ctx.font = "12px monospace";
+  ctx.fillText("REC", 18, 32);
+  ctx.fillText(`${recordedFrameCount}`, 52, 32);
   ctx.restore();
 }
 
@@ -1263,7 +1411,7 @@ const sketch = async () => {
   frameBufferCtx = frameBufferCanvas.getContext("2d");
 
   video = document.createElement("video");
-  video.src = "video/yamal.mp4";
+  video.src = "video/kudapantai.mp4";
   video.loop = true;
   video.muted = true;
   video.autoplay = true;
@@ -1277,7 +1425,7 @@ const sketch = async () => {
     };
   });
 
-  audio = new Audio("audio/criswar2.mp3");
+  audio = new Audio("audio/criswar3.mp3");
   audio.loop = true;
   audio.crossOrigin = "anonymous";
 
@@ -1428,6 +1576,8 @@ const sketch = async () => {
       context.fillRect(0, 0, width, height);
       context.restore();
     }
+
+    drawObjectTrails(context, trackedBlobs, width, height, bass, isBeat);
 
     drawMotionContent(
       context,
